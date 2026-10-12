@@ -1,5 +1,5 @@
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
-import { DebugLog, findChrome, saveScreenshot } from "../utils.js";
+import { DebugLog, findChrome, saveScreenshot, toSystemUserAgent } from "../utils.js";
 
 export interface BrowserOptions {
   chromePath?: string;
@@ -29,8 +29,25 @@ const DEFAULT_ARGS = [
   "--disable-blink-features=AutomationControlled",
 ];
 
-const DEFAULT_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+/**
+ * Sends the host system's real User-Agent instead of a hardcoded one.
+ * Chrome already reports the real OS and version; only headless mode needs
+ * fixing ("HeadlessChrome"). Overriding the UA without metadata drops the
+ * Sec-CH-UA client hints, so they are read from Chrome itself and re-applied.
+ */
+async function applySystemUserAgent(browser: Browser, page: Page): Promise<void> {
+  const browserUserAgent = await browser.userAgent();
+  if (!browserUserAgent.includes("HeadlessChrome/")) return;
+
+  // navigator.userAgentData is only exposed in secure contexts (not about:blank)
+  await page.goto("chrome://version");
+  const userAgentMetadata = await page.evaluate(() =>
+    (navigator as any).userAgentData.getHighEntropyValues([
+      "architecture", "bitness", "fullVersionList", "model", "platformVersion", "wow64",
+    ]),
+  );
+  await page.setUserAgent({ userAgent: toSystemUserAgent(browserUserAgent), userAgentMetadata });
+}
 
 /**
  * Launches a browser session for scraping.
@@ -87,7 +104,7 @@ export async function launchBrowser(
   const page = await browser.newPage();
   const vp = viewport || { width: 1280, height: 900 };
   await page.setViewport(vp);
-  await page.setUserAgent(DEFAULT_UA);
+  await applySystemUserAgent(browser, page);
 
   // Hide automation signals
   await page.evaluateOnNewDocument(() => {

@@ -3,7 +3,7 @@ import * as path from "path";
 import { chromium, type Browser, type Page } from "playwright-core";
 import type { BankMovement, BankScraper, CreditCardBalance, MovementSource, ScrapeResult, ScraperOptions } from "../types.js";
 import { MOVEMENT_SOURCE } from "../types.js";
-import { DebugLog, delay, deduplicateAcrossSources, deduplicateMovements, findChrome, monthYearLabel, normalizeDate, normalizeOwner, normalizeInstallments, parseChileanAmount } from "../utils.js";
+import { DebugLog, delay, deduplicateAcrossSources, deduplicateMovements, findChrome, toSystemUserAgent, monthYearLabel, normalizeDate, normalizeOwner, normalizeInstallments, parseChileanAmount } from "../utils.js";
 
 // ─── Constants ───────────────────────────────────────────────────
 
@@ -39,9 +39,14 @@ async function launchPlaywright(options: ScraperOptions): Promise<{ browser: Bro
     ],
   });
 
+  // Real User-Agent of the installed Chrome (host OS), minus the headless marker
+  const cdp = await browser.newBrowserCDPSession();
+  const { userAgent } = await cdp.send("Browser.getVersion");
+  await cdp.detach();
+
   const context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    userAgent: toSystemUserAgent(userAgent),
   });
 
   // Hide automation signals

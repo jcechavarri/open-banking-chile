@@ -25,6 +25,14 @@ export class DebugLog extends Array<string> {
   }
 }
 
+/**
+ * User-Agent real del Chrome instalado (OS y versión del sistema donde corre).
+ * Solo quita el marcador "HeadlessChrome" que agrega el modo headless.
+ */
+export function toSystemUserAgent(browserUserAgent: string): string {
+  return browserUserAgent.replace("HeadlessChrome/", "Chrome/");
+}
+
 /** Formatea un RUT chileno (ej: "123456789" → "12.345.678-9") */
 export function formatRut(rut: string): string {
   const clean = rut.replace(/[.\-]/g, "");

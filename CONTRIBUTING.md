@@ -134,7 +134,7 @@ En `src/utils.ts` hay funciones compartidas que puedes usar:
 4. **2FA**: Si el banco pide clave dinámica, retorna error claro. No intentes bypassear seguridad.
 5. **Tablas de movimientos**: Busca `<th>` con "Fecha", "Cargo", "Abono", "Saldo" — es el patrón estándar.
 6. **Delays**: Usa delays generosos (2-4s) entre acciones. Los SPAs bancarios son lentos.
-7. **User-Agent**: Siempre setea un User-Agent de Chrome reciente.
+7. **User-Agent**: No lo hardcodees. `launchBrowser()` envía el User-Agent real del Chrome instalado (OS y versión del sistema), detectado automáticamente.
 8. **Screenshots de debug**: Usa `saveScreenshot()` en cada paso para facilitar troubleshooting.
 
 ## Bancos que faltan (wishlist)
